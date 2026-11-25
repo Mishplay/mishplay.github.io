@@ -131,6 +131,11 @@ describe('penalty shoot-out (real ESPN payload, 2022 final)', () => {
     const m = toMatch('eng.1', j('espn_scoreboard.json').events[0])
     expect('homePens' in m || 'awayPens' in m).toBe(false)
   })
+  it('ignores a stray shootoutScore when the match did not go to penalties', () => {
+    const ev = JSON.parse(JSON.stringify(x.scoreboardEvent)); ev.status.type.name = 'STATUS_FULL_TIME'
+    ev.competitions[0].competitors.forEach((c: { shootoutScore: number }) => (c.shootoutScore = 0))
+    expect('homePens' in toMatch('fifa.world', ev)).toBe(false)
+  })
   it('does not count shoot-out kicks as goals', () => {
     const goals = mapEvents(x.summary).filter((e) => ['goal', 'penalty-goal', 'own-goal'].includes(e.type))
     expect(goals.length).toBe(6)

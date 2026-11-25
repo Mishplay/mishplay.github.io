@@ -64,7 +64,7 @@ export function toMatch(compId: string, ev: any): Match {
     minute: status === 'live' ? ev.status?.displayClock : undefined,
     homeScore: hasScore ? Number(home.score) : undefined,
     awayScore: hasScore ? Number(away.score) : undefined,
-    ...(home.shootoutScore != null && away.shootoutScore != null ? { homePens: Number(home.shootoutScore), awayPens: Number(away.shootoutScore) } : {}),
+    ...(/^STATUS_(FINAL_PEN|SHOOTOUT)$/.test(ev.status?.type?.name) && home.shootoutScore != null && away.shootoutScore != null ? { homePens: Number(home.shootoutScore), awayPens: Number(away.shootoutScore) } : {}),
     venue: c.venue?.fullName,
     round: ev.week?.number ? `Matchday ${ev.week.number}` : undefined,
     provenance: [prov(String(ev.id))],

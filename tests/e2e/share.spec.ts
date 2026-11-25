@@ -12,6 +12,7 @@ function synthetic(opts: { pens?: [number, number]; hs?: number; as?: number; go
   if (opts.hs !== undefined) { comps.find((c: any) => c.homeAway === 'home').score = String(opts.hs); hc.find((c: any) => c.homeAway === 'home').score = String(opts.hs) }
   if (opts.as !== undefined) { comps.find((c: any) => c.homeAway === 'away').score = String(opts.as); hc.find((c: any) => c.homeAway === 'away').score = String(opts.as) }
   if (opts.pens) for (const list of [comps, hc]) { list.find((c: any) => c.homeAway === 'home').shootoutScore = opts.pens[0]; list.find((c: any) => c.homeAway === 'away').shootoutScore = opts.pens[1] }
+  if (opts.pens) for (const st of [board.events[0].status, sum.header.competitions[0].status]) st.type = { ...st.type, name: 'STATUS_FINAL_PEN' }
   if (opts.live) for (const st of [board.events[0].status, sum.header.competitions[0].status]) { st.displayClock = "67'"; st.type = { id: '2', name: 'STATUS_SECOND_HALF', state: 'in', completed: false, description: 'Second Half' } }
   if (opts.goals) {
     const tpl = sum.keyEvents.find((k: any) => k.type?.text === 'Goal')
@@ -228,6 +229,8 @@ test.describe('share poster system', () => {
     await setup(context, live); await openEditor(page, live)
     const t = await allText(page)
     expect(t).toContain("LIVE · 67'"); expect(t).toMatch(/SCORE AT \d/); expect(t).not.toContain('FULL TIME')
+    expect(layoutProblems((await dbg(page)).texts, 'Story')).toEqual([])
+    if (SHOTS) await save(page, 'v4-live-story')
     await expect(page.getByText(/snapshot, so it is labelled LIVE/)).toBeVisible()
     await page.getByRole('button', { name: 'Fan', exact: true }).click(); await settle(page)
     const f = await allText(page); expect(f).toMatch(/LIVE\s+1–0/); expect(f).not.toMatch(/WIN|DEFEAT/)   // never a result word while live
