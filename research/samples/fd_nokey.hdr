@@ -1,0 +1,12 @@
+HTTP/1.1 403 
+Server: nginx
+Date: Sun, 22 Nov 2026 14:07:09 GMT
+Content-Type: application/json;charset=UTF-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+X-Requests-Available: 49
+X-RequestCounter-Reset: 85950
+X-API-Version: v4
+X-Authenticated-Client: anonymous
+Content-Language: de-DE
+

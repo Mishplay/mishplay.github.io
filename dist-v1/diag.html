@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>MishPlay diagnostics</title>
+<style>
+  html,body{margin:0;background:#070a0f;color:#f8fafc;font:15px/1.45 ui-monospace,Menlo,monospace}
+  main{padding:16px 16px calc(24px + env(safe-area-inset-bottom))}
+  h1{font:800 20px/1.2 system-ui,sans-serif;margin:0 0 4px}
+  p.s{color:#94a3b8;margin:0 0 14px;font:13px/1.4 system-ui,sans-serif}
+  .verdict{border-radius:14px;padding:14px;margin:12px 0;font:600 15px/1.4 system-ui,sans-serif}
+  .ok{background:#052e1a;border:1px solid #00e676}.bad{background:#3b1010;border:1px solid #ff4d5e}
+  table{width:100%;border-collapse:collapse;table-layout:fixed}td{word-break:break-all}td{padding:6px 4px;border-bottom:1px solid #1e293b;vertical-align:top}
+  td:first-child{color:#94a3b8;width:46%}
+  .ruler{margin:14px 0}.ruler div{height:22px;border-radius:6px;margin:6px 0;font:600 12px/22px system-ui;padding-left:8px;color:#04210f}
+  button{min-height:44px;border-radius:12px;border:0;padding:0 16px;font:700 14px system-ui;margin:6px 8px 0 0}
+  .p{background:#00e676;color:#04210f}.g{background:#1e293b;color:#f8fafc}
+  pre{white-space:pre-wrap;word-break:break-all;background:#0d1320;padding:10px;border-radius:10px;font-size:12px}
+</style>
+</head>
+<body><main>
+<h1>MishPlay diagnostics</h1>
+<p class="s">Open this on the phone that shows the zoomed screen, then send a screenshot of the whole page.</p>
+<div id="verdict" class="verdict"></div>
+<table id="t"></table>
+<div class="ruler">
+  <div style="width:100%;background:#00e676">100% of the layout width</div>
+  <div style="width:320px;max-width:100%;background:#94a3b8">320 CSS px</div>
+  <div style="width:160px;background:#64748b">160 CSS px</div>
+</div>
+<button class="p" id="reset">Reset app (clear caches) and open MishPlay</button>
+<button class="g" id="open">Open MishPlay</button>
+<pre id="raw"></pre>
+</main>
+<script>
+(function () {
+  function mm(q) { try { return matchMedia(q).matches } catch (e) { return 'n/a' } }
+  function measure() {
+    var vv = window.visualViewport || {}
+    var de = document.documentElement
+    var meta = document.querySelector('meta[name=viewport]')
+    var screenW = screen.width, innerW = window.innerWidth
+    var zoom = screenW / innerW
+    // probe an element with the browser's default size (font-size: medium) so our own page CSS can't skew the reading
+    var probe = document.createElement('div'); probe.style.cssText = 'position:absolute;visibility:hidden;font-size:medium;font-family:serif'; probe.textContent = 'x'; document.body.appendChild(probe)
+    var rootPx = parseFloat(getComputedStyle(probe).fontSize); document.body.removeChild(probe)
+    var rows = [
+      ['page URL', location.href],
+      ['secure context (https/localhost)', String(window.isSecureContext)],
+      ['service worker controlling', String(!!(navigator.serviceWorker && navigator.serviceWorker.controller))],
+      ['display-mode: standalone', String(mm('(display-mode: standalone)'))],
+      ['display-mode: browser', String(mm('(display-mode: browser)'))],
+      ['viewport meta', meta ? meta.content : 'MISSING'],
+      ['screen.width x height (CSS px)', screen.width + ' x ' + screen.height],
+      ['window.innerWidth x innerHeight', innerW + ' x ' + window.innerHeight],
+      ['documentElement.clientWidth', de.clientWidth],
+      ['documentElement.scrollWidth', de.scrollWidth],
+      ['devicePixelRatio', window.devicePixelRatio],
+      ['visualViewport width x height', (vv.width || '?') + ' x ' + (vv.height || '?')],
+      ['visualViewport.scale (pinch zoom)', vv.scale],
+      ['estimated zoom (screen.width / innerWidth)', zoom.toFixed(2) + 'x'],
+      ['browser default text size (normal = 16 px)', rootPx + ' px'],
+      ['orientation', (screen.orientation && screen.orientation.type) || 'n/a'],
+      ['pointer: coarse / hover: none', mm('(pointer: coarse)') + ' / ' + mm('(hover: none)')],
+      ['(min-width: 768px) matches', String(mm('(min-width: 768px)'))],
+      ['user agent', navigator.userAgent]
+    ]
+    document.getElementById('t').innerHTML = rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>' }).join('')
+    var v = document.getElementById('verdict'), problems = []
+    if (zoom > 1.15 || zoom < 0.87) problems.push('The page is rendered at ' + zoom.toFixed(2) + 'x of the screen width. Something is zooming the browser: Chrome page zoom / "Default zoom" accessibility setting, Android "Display size", "Desktop site" mode, or a TV/in-app browser.')
+    if (vv.scale && Math.abs(vv.scale - 1) > 0.02) problems.push('The visual viewport is pinch-zoomed (scale ' + vv.scale + ').')
+    if (de.scrollWidth > de.clientWidth + 1) problems.push('The page is wider than the screen (horizontal overflow).')
+    if (Math.abs(rootPx - 16) > 0.5) problems.push('Default text size is ' + rootPx + 'px (normal 16): the Android/Chrome text-size setting is not 100%.')
+    if (!meta || meta.content.indexOf('width=device-width') < 0) problems.push('Viewport meta is missing or wrong.')
+    v.className = 'verdict ' + (problems.length ? 'bad' : 'ok')
+    v.innerHTML = problems.length ? '<b>Zoom/scale problem detected on this device:</b><br>' + problems.join('<br>') : '<b>Normal scale.</b> Layout width matches the screen, no pinch-zoom, no overflow, text size 100%. If MishPlay still looks zoomed in the app, the cause is in the app, not the device.'
+    document.getElementById('raw').textContent = JSON.stringify({ screenW: screenW, innerW: innerW, clientW: de.clientWidth, scrollW: de.scrollWidth, dpr: window.devicePixelRatio, vvScale: vv.scale, zoom: +zoom.toFixed(2), rootPx: rootPx, standalone: mm('(display-mode: standalone)'), ua: navigator.userAgent }, null, 1)
+  }
+  measure(); addEventListener('resize', measure)
+  if (window.visualViewport) visualViewport.addEventListener('resize', measure)
+  document.getElementById('open').onclick = function () { location.href = '/' }
+  document.getElementById('reset').onclick = function () {
+    var p = []
+    if (navigator.serviceWorker) p.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister() })) }))
+    if (window.caches) p.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k) })) }))
+    try { indexedDB.deleteDatabase('mish-football') } catch (e) {}
+    Promise.all(p).then(function () { location.replace('/') })
+  }
+})()
+</script>
+</body></html>

@@ -1,0 +1,12 @@
+HTTP/1.1 302 Found
+Content-Type: text/html
+Content-Length: 0
+Connection: keep-alive
+X-WS-Origin: available
+X-WS-RateLimit-Limit: 1000
+X-WS-RateLimit-Remaining: 999
+Date: Sun, 22 Nov 2026 14:07:10 GMT
+Server: Apache
+Cache-Control: no-cache
+Location: https://football-data.co.uk/mmz4281/2526/E0.csv
+

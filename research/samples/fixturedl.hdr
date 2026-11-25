@@ -1,0 +1,17 @@
+HTTP/2 200 
+date: Sun, 22 Nov 2026 14:07:10 GMT
+content-type: application/json; charset=utf-8
+server: cloudflare
+cache-control: private
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+set-cookie: ARRAffinity=131153ef6276acfc69456324ddaf3caf66b1a29fc76e000c25a11a6a578ea1f4;Path=/;HttpOnly;Secure;Domain=fixturedownload.com
+set-cookie: ARRAffinitySameSite=131153ef6276acfc69456324ddaf3caf66b1a29fc76e000c25a11a6a578ea1f4;Path=/;HttpOnly;SameSite=None;Secure;Domain=fixturedownload.com
+vary: Accept-Encoding
+x-aspnetmvc-version: 5.2
+x-aspnet-version: 4.0.30319
+x-powered-by: ASP.NET
+cf-cache-status: DYNAMIC
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=G1vWuldmxOBmsUgoyWNUtyBs%2BpzcDIjQOnvMB61KDOfnsQEzVVXlVDLG9xt0XyAfYS8jkCQ5nfMui7GRSoMXGssa7YVRTJw0LEQIllyFH9EBE8UrUFIqbQCd8iDyxEuiEr5VIXM3"}]}
+cf-ray: a5e87fb38d2f2fe1-CNN
+alt-svc: h3=":443"; ma=86400
+

@@ -1,0 +1,178 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>MishPlay poster concepts</title>
+<style>
+@font-face{font-family:HG;font-weight:500;src:url(assets/hanken-grotesk-latin-500-normal.woff2)}
+@font-face{font-family:HG;font-weight:800;src:url(assets/hanken-grotesk-latin-800-normal.woff2)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000}
+.poster{display:none;position:relative;width:1080px;height:1920px;overflow:hidden;background:#06080B;color:#F5F6F8;font-family:HG,system-ui,sans-serif;font-weight:500}
+.on{display:block}
+.layer{position:absolute;inset:0}
+.bg{position:absolute;inset:-90px;background-size:cover;background-position:center}
+.grain{position:absolute;inset:0;opacity:.09;mix-blend-mode:overlay;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='300' height='300' filter='url(%23n)'/></svg>")}
+.safe{position:absolute;left:96px;right:96px;top:270px;bottom:300px;display:flex;flex-direction:column;justify-content:space-between}
+.label{font-size:26px;letter-spacing:.2em;text-transform:uppercase;color:#98A2B3;font-weight:500}
+.meta{display:flex;justify-content:space-between}
+.status{display:flex;align-items:center;gap:16px;margin-top:22px;color:#00E676}
+.status i{width:14px;height:14px;border-radius:50%;background:#00E676;display:block}
+.hair{height:2px;background:rgba(245,246,248,.18)}
+.score{display:grid;grid-template-columns:250px 1fr 250px;align-items:center}
+.score .num{justify-content:center}
+.team{display:flex;flex-direction:column;align-items:center;text-align:center}
+.team img{width:190px;height:190px;object-fit:contain;filter:drop-shadow(0 10px 24px rgba(0,0,0,.5))}
+.name{font-weight:800;font-size:38px;letter-spacing:-.005em;text-transform:uppercase;line-height:1.08;margin-top:26px;max-width:250px}
+.num{font-weight:800;font-size:250px;line-height:.8;letter-spacing:-.04em;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:14px;padding:0}
+.num b{font-weight:800}
+.num s{text-decoration:none;font-size:100px;color:#8A94A6;font-weight:500;align-self:center;position:relative;top:-12px}
+.dim{opacity:.68}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:48px}
+.col{font-size:40px;line-height:1.62;text-align:center}
+.col span{display:block}
+.col em{font-style:normal;color:#8A94A6;margin-left:10px}
+.foot{display:flex;justify-content:space-between;align-items:center}
+.brand{display:flex;align-items:center;gap:18px;font-weight:800;font-size:34px}
+.brand img{height:46px}
+.credit{font-size:21px;color:#8A94A6;line-height:1.35;max-width:560px;text-align:right}
+.tag{position:absolute;left:24px;top:24px;font-size:26px;font-weight:800;letter-spacing:.06em;color:#00E676;background:rgba(0,0,0,.55);padding:8px 14px;border-radius:8px}
+</style></head><body>
+
+<!-- M1 FLOODLIGHT NIGHT: licensed night-stadium photo, soft blur, dark grade; side-by-side scoreline -->
+<div class="poster" id="m1">
+ <div class="bg" style="background-image:url(assets/bg0.jpg);filter:blur(20px) brightness(.62) saturate(1.1)"></div>
+ <div class="layer" style="background:linear-gradient(180deg,rgba(6,8,11,.78) 0%,rgba(6,8,11,.35) 32%,rgba(6,8,11,.55) 62%,rgba(6,8,11,.94) 100%)"></div>
+ <div class="grain"></div>
+ <div class="safe">
+  <div><div class="meta"><span class="label">Premier League</span><span class="label">21 Nov 2026</span></div><div class="status label" style="color:#00E676"><i></i>Full time</div></div>
+  <div style="display:flex;flex-direction:column;gap:70px">
+   <div class="score">
+    <div class="team"><img src="assets/crest-city.png"><div class="name">Manchester City</div></div>
+    <div class="num"><b>5</b><s>–</s><b class="dim">1</b></div>
+    <div class="team dim"><img src="assets/crest-fulham.png"><div class="name">Fulham</div></div>
+   </div>
+   <div class="hair"></div>
+   <div class="cols"><div class="col"><span>Haaland<em>10' 33' 61'</em></span><span>Foden<em>50'</em></span><span>Doku<em>88'</em></span></div><div class="col dim"><span>Muniz<em>20'</em></span></div></div>
+  </div>
+  <div class="foot"><div class="brand"><img src="assets/mish-glyph.svg">MishPlay</div><div class="credit">Background: “Champasak Stadium during at night”<br>AddedUpdatePoster · CC0 · Wikimedia Commons</div></div>
+ </div>
+</div>
+
+<!-- M2 FROSTED BAND: scoreline sits in a frosted glass band over a less-blurred photo -->
+<div class="poster" id="m2">
+ <div class="bg" style="background-image:url(assets/bg0.jpg);filter:blur(9px) brightness(.75) saturate(1.15);background-position:30% center"></div>
+ <div class="layer" style="background:linear-gradient(180deg,rgba(6,8,11,.85) 0%,rgba(6,8,11,.2) 30%,rgba(6,8,11,.2) 55%,rgba(6,8,11,.92) 100%)"></div>
+ <div class="grain"></div>
+ <div class="safe">
+  <div><div class="meta"><span class="label">Premier League</span><span class="label">21 Nov 2026</span></div><div class="status label"><i></i>Full time</div></div>
+  <div style="display:flex;flex-direction:column;gap:64px">
+   <div style="backdrop-filter:blur(22px) brightness(.8);-webkit-backdrop-filter:blur(22px) brightness(.8);background:rgba(10,14,20,.34);border:1.5px solid rgba(255,255,255,.16);border-radius:40px;padding:64px 28px">
+    <div class="score">
+     <div class="team"><img style="width:160px;height:160px" src="assets/crest-city.png"><div class="name" style="font-size:34px">Manchester City</div></div>
+     <div class="num" style="font-size:230px"><b>5</b><s style="font-size:90px">–</s><b class="dim">1</b></div>
+     <div class="team dim"><img style="width:160px;height:160px" src="assets/crest-fulham.png"><div class="name" style="font-size:34px">Fulham</div></div>
+    </div>
+   </div>
+   <div class="cols"><div class="col"><span>Haaland<em>10' 33' 61'</em></span><span>Foden<em>50'</em></span><span>Doku<em>88'</em></span></div><div class="col dim"><span>Muniz<em>20'</em></span></div></div>
+  </div>
+  <div class="foot"><div class="brand"><img src="assets/mish-glyph.svg">MishPlay</div><div class="credit">Background: “Champasak Stadium during at night”<br>AddedUpdatePoster · CC0 · Wikimedia Commons</div></div>
+ </div>
+</div>
+
+<!-- M3 CLUB SPLIT: background graded in the two clubs' colours (left/right), photo secondary -->
+<div class="poster" id="m3">
+ <div class="bg" style="background-image:url(assets/bg0.jpg);filter:blur(18px) brightness(.5) saturate(.9)"></div>
+ <div class="layer" style="background:linear-gradient(90deg,rgba(24,64,120,.62) 0%,rgba(24,64,120,.0) 46%,rgba(60,60,64,.0) 54%,rgba(70,70,78,.55) 100%)"></div>
+ <div class="layer" style="background:linear-gradient(180deg,rgba(6,8,11,.8) 0%,rgba(6,8,11,.1) 34%,rgba(6,8,11,.45) 64%,rgba(6,8,11,.95) 100%)"></div>
+ <div class="grain"></div>
+ <div class="safe">
+  <div><div class="meta"><span class="label">Premier League</span><span class="label">21 Nov 2026</span></div><div class="status label"><i></i>Full time</div></div>
+  <div style="display:flex;flex-direction:column;gap:76px">
+   <div class="score" style="grid-template-columns:1fr auto 1fr">
+    <div class="team"><img src="assets/crest-city.png"><div class="name">Manchester City</div></div>
+    <div class="num" style="font-size:270px"><b>5</b><s>–</s><b class="dim">1</b></div>
+    <div class="team dim"><img src="assets/crest-fulham.png"><div class="name">Fulham</div></div>
+   </div>
+   <div class="cols" style="position:relative"><div style="position:absolute;left:50%;top:6px;bottom:6px;width:2px;background:rgba(245,246,248,.18)"></div><div class="col"><span>Haaland<em>10' 33' 61'</em></span><span>Foden<em>50'</em></span><span>Doku<em>88'</em></span></div><div class="col dim"><span>Muniz<em>20'</em></span></div></div>
+  </div>
+  <div class="foot"><div class="brand"><img src="assets/mish-glyph.svg">MishPlay</div><div class="credit">Background: “Champasak Stadium during at night”<br>AddedUpdatePoster · CC0 · Wikimedia Commons</div></div>
+ </div>
+</div>
+
+<!-- M4 BRAND ATMOSPHERE: no photo at all (always licence-free): floodlight glow, perspective pitch stripes, grain -->
+<div class="poster" id="m4">
+ <div class="layer" style="background:radial-gradient(900px 700px at 18% 4%,rgba(180,210,255,.22),transparent 70%),radial-gradient(900px 700px at 86% 0%,rgba(180,210,255,.16),transparent 70%),linear-gradient(180deg,#0A1220 0%,#070B12 55%,#06080B 100%)"></div>
+ <div style="position:absolute;left:-40%;right:-40%;bottom:-120px;height:1100px;transform:perspective(900px) rotateX(64deg);transform-origin:50% 100%;background:repeating-linear-gradient(90deg,rgba(0,230,118,.07) 0 110px,rgba(0,230,118,.0) 110px 220px);-webkit-mask-image:linear-gradient(0deg,#000 10%,transparent 95%);mask-image:linear-gradient(0deg,#000 10%,transparent 95%)"></div>
+ <div class="grain"></div>
+ <div class="safe">
+  <div><div class="meta"><span class="label">Premier League</span><span class="label">21 Nov 2026</span></div><div class="status label"><i></i>Full time</div></div>
+  <div style="display:flex;flex-direction:column;gap:70px">
+   <div class="score">
+    <div class="team"><img src="assets/crest-city.png"><div class="name">Manchester City</div></div>
+    <div class="num"><b>5</b><s>–</s><b class="dim">1</b></div>
+    <div class="team dim"><img src="assets/crest-fulham.png"><div class="name">Fulham</div></div>
+   </div>
+   <div class="hair"></div>
+   <div class="cols"><div class="col"><span>Haaland<em>10' 33' 61'</em></span><span>Foden<em>50'</em></span><span>Doku<em>88'</em></span></div><div class="col dim"><span>Muniz<em>20'</em></span></div></div>
+  </div>
+  <div class="foot"><div class="brand"><img src="assets/mish-glyph.svg">MishPlay</div><div class="credit">Data: ESPN</div></div>
+ </div>
+</div>
+
+<!-- P1 PORTRAIT HERO: large licensed portrait, graded into the poster; name + verified goals at the bottom -->
+<div class="poster" id="p1">
+ <img src="assets/haaland.jpg" style="position:absolute;left:0;top:0;width:1080px;height:1440px;object-fit:cover;object-position:50% 12%;filter:saturate(.9) contrast(1.04) brightness(.86)">
+ <div class="layer" style="background:linear-gradient(180deg,rgba(6,8,11,.55) 0%,rgba(6,8,11,0) 20%,rgba(6,8,11,0) 46%,rgba(6,8,11,.82) 68%,#06080B 84%)"></div>
+ <div class="grain"></div>
+ <div class="safe" style="justify-content:space-between">
+  <div class="meta"><span class="label" style="color:#cdd5e0">Premier League</span><span class="label" style="color:#cdd5e0">21 Nov 2026</span></div>
+  <div>
+   <div style="display:flex;align-items:flex-end;gap:28px"><div style="font-weight:800;font-size:380px;line-height:.78;letter-spacing:-.05em">3</div><div class="label" style="color:#00E676;font-size:34px;padding-bottom:6px">Goals</div></div>
+   <div style="margin-top:52px"><div class="label" style="color:#cdd5e0">Erling</div><div style="font-weight:800;font-size:128px;line-height:1;letter-spacing:-.02em;text-transform:uppercase;margin-top:6px">Haaland</div></div>
+   <div style="display:flex;align-items:center;gap:22px;margin-top:34px"><img src="assets/crest-city.png" style="height:64px"><span style="font-weight:800;font-size:42px;letter-spacing:.02em">10' &nbsp;33' &nbsp;61'</span></div>
+   <div class="hair" style="margin:34px 0 22px"></div>
+   <div style="font-size:34px;font-weight:800">Manchester City 5–1 Fulham</div><div class="label" style="margin-top:8px;font-size:22px">Full time</div>
+  </div>
+  <div class="foot"><div class="brand"><img src="assets/mish-glyph.svg">MishPlay</div><div class="credit">Photo: Bryan Berlin · CC BY-SA 4.0 · Wikimedia Commons<br>This poster is licensed CC BY-SA 4.0</div></div>
+ </div>
+</div>
+
+<!-- P2 BLURRED + SHARP: blurred copy of the portrait as atmosphere; the sharp portrait sits in a clean frame -->
+<div class="poster" id="p2">
+ <div class="bg" style="background-image:url(assets/haaland.jpg);background-position:50% 20%;filter:blur(34px) brightness(.42) saturate(1.1)"></div>
+ <div class="layer" style="background:linear-gradient(180deg,rgba(6,8,11,.6),rgba(6,8,11,.2) 40%,rgba(6,8,11,.85) 100%)"></div>
+ <div class="grain"></div>
+ <div class="safe">
+  <div class="meta"><span class="label">Premier League</span><span class="label">21 Nov 2026</span></div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:0">
+   <div style="width:760px;height:760px;border-radius:44px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55)"><img src="assets/haaland.jpg" style="width:100%;height:100%;object-fit:cover;object-position:50% 14%"></div>
+   <div style="margin-top:44px;text-align:center"><div class="label" style="color:#cdd5e0">Erling</div><div style="font-weight:800;font-size:112px;line-height:1;letter-spacing:-.02em;text-transform:uppercase;margin-top:4px">Haaland</div></div>
+   <div style="display:flex;align-items:center;gap:26px;margin-top:30px"><img src="assets/crest-city.png" style="height:60px"><span style="font-weight:800;font-size:42px"><span style="color:#00E676">3 GOALS</span> &nbsp;· 10' 33' 61'</span></div>
+  </div>
+  <div class="foot"><div class="brand"><img src="assets/mish-glyph.svg">MishPlay</div><div class="credit">Photo: Bryan Berlin · CC BY-SA 4.0 · Wikimedia Commons<br>This poster is licensed CC BY-SA 4.0</div></div>
+ </div>
+</div>
+
+<!-- P3 TYPOGRAPHY-LED: the default whenever no licence-clean portrait exists. Brand atmosphere + crest + shirt number -->
+<div class="poster" id="p3">
+ <div class="layer" style="background:radial-gradient(900px 700px at 20% 4%,rgba(180,210,255,.2),transparent 70%),radial-gradient(900px 700px at 90% 0%,rgba(180,210,255,.14),transparent 70%),linear-gradient(180deg,#0A1220 0%,#070B12 55%,#06080B 100%)"></div>
+ <div style="position:absolute;left:-40%;right:-40%;bottom:-120px;height:1100px;transform:perspective(900px) rotateX(64deg);transform-origin:50% 100%;background:repeating-linear-gradient(90deg,rgba(0,230,118,.07) 0 110px,rgba(0,230,118,0) 110px 220px);-webkit-mask-image:linear-gradient(0deg,#000 10%,transparent 95%);mask-image:linear-gradient(0deg,#000 10%,transparent 95%)"></div>
+ <div style="position:absolute;right:-30px;top:360px;font-weight:800;font-size:1000px;line-height:.8;letter-spacing:-.06em;color:rgba(245,246,248,.055)">9</div>
+ <div class="grain"></div>
+ <div class="safe">
+  <div class="meta"><span class="label">Premier League</span><span class="label">21 Nov 2026</span></div>
+  <div>
+   <div style="display:flex;align-items:flex-end;gap:28px"><div style="font-weight:800;font-size:420px;line-height:.78;letter-spacing:-.05em">3</div><div class="label" style="color:#00E676;font-size:34px;padding-bottom:6px">Goals</div></div>
+   <div style="display:flex;align-items:center;gap:22px;margin-top:70px"><img src="assets/crest-city.png" style="height:84px"><span class="label">Manchester City · #9</span></div>
+   <div style="margin-top:34px"><div class="label">Erling</div><div style="font-weight:800;font-size:150px;line-height:1;letter-spacing:-.03em;text-transform:uppercase;margin-top:6px">Haaland</div></div>
+   <div style="font-weight:800;font-size:44px;margin-top:30px">10' &nbsp;33' &nbsp;61'</div>
+   <div class="hair" style="margin:36px 0 22px"></div>
+   <div style="font-size:34px;font-weight:800">Manchester City 5–1 Fulham</div><div class="label" style="margin-top:8px;font-size:22px">Full time</div>
+  </div>
+  <div class="foot"><div class="brand"><img src="assets/mish-glyph.svg">MishPlay</div><div class="credit">Data: ESPN</div></div>
+ </div>
+</div>
+
+<div class="tag" id="tag" style="display:none"></div>
+<script>
+ const c=new URLSearchParams(location.search).get('c')||'m1'; document.getElementById(c).classList.add('on')
+</script>
+</body></html>
