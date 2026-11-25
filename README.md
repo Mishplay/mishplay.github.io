@@ -66,7 +66,8 @@ Match and player screens have a **Share** button that opens a poster editor: cho
 - Design system, tokens and per-template specs: `design/share-posters/` (derived from a Stitch exploration; see the limitation noted there). Code: `src/features/share/` (`tokens.ts`, `draw.ts`, `model.ts`, `images.ts`).
 - **Layout:** 1080×1920 vertical (plus 1080×1350), Instagram-safe areas, match posters are a big status headline over [crest, numeral | numeral, crest] in MishPlay emerald with drawn halftone and brush art, scorers under each side (`+N more` instead of tiny text), penalty shoot-out score only when there was one, player spotlight with a framed portrait over its blurred copy, or a typography-led layout (crest, shirt number, name) when there is no usable photo.
 - **Images, licence-gated** (`src/features/share/portrait.ts`, `research/images/LICENSING_APPROACH.md`): backgrounds are MishPlay's own drawn atmosphere by default, or an optional bundled CC0 stadium photo (blurred, credited). Player portraits come only from Wikimedia Commons, matched by the provider's exact player id via Wikidata P3681, and only if Commons says CC0 / public domain / CC BY (credited) or CC BY-SA (off until the user opts in; the poster then says "licensed CC BY-SA 4.0"). Missing/unclear/NC/ND licence = no photo. Provider (ESPN) photos are never used in posters. Club crests come from the provider and belong to their clubs (shown for identification; monogram fallback).
-- Typeface (Hanken Grotesk) is bundled; posters are generated offline from cached data.
+- Match-poster club crests are recoloured in shades of the app green; score numerals use Bebas Neue (OFL).
+- Typefaces (Hanken Grotesk, Bebas Neue) are bundled; posters are generated offline from cached data.
 - Tests pin the browser clock to the recorded fixture date (`tests/e2e/mocks.ts`), so they don't depend on the day they run.
 
 ## Deploy (static hosting)

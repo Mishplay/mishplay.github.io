@@ -33,6 +33,9 @@ export const TYPE = {
 
 export const FONT_FAMILY = '"Hanken Grotesk", -apple-system, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
 
+/** Score numerals only (bundled Bebas Neue, OFL; digits and dash are in its latin subset). */
+export const SCORE_FONT = `"Bebas Neue", ${FONT_FAMILY}`
+
 export type FormatId = 'story' | 'post'
 /** safeTop/safeBottom: Instagram overlays (story header + reply bar) and feed crop. All text and key content stays inside. */
 export const FORMATS: Record<FormatId, { w: number; h: number; label: string; short: string; safeTop: number; safeBottom: number }> = {

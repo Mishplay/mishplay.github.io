@@ -2,7 +2,7 @@ import type { PlayerCandidate, Scorer, ShareData, Side } from './model'
 import { splitName } from './model'
 import type { Loaded } from './images'
 import type { Team } from '../../services/football/types'
-import { COLOR, FONT_FAMILY, FORMATS, HAIR, MARGIN, SPACE, TYPE, WEIGHT, type FormatId } from './tokens'
+import { COLOR, FONT_FAMILY, FORMATS, HAIR, MARGIN, SCORE_FONT, SPACE, TYPE, WEIGHT, type FormatId } from './tokens'
 
 export { FORMATS, type FormatId }
 export type MatchTemplateId = 'result' | 'scorers' | 'fan'
@@ -99,13 +99,30 @@ function deepen(hex: string): string | null {
   const [R, G, B] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x]
   return `rgb(${Math.round((R + m0) * 255)},${Math.round((G + m0) * 255)},${Math.round((B + m0) * 255)})`
 }
-function crest(ctx: CanvasRenderingContext2D, im: Loaded | null, name: string, cx: number, cy: number, size: number, alpha = 1) {
+/** A crest recoloured in shades of the app green: each pixel's brightness picks the shade, so inner detail survives; transparency is kept. */
+function monoCrest(im: Loaded, w: number, h: number): CanvasImageSource {
+  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h))
+  const x = c.getContext('2d', { willReadFrequently: true })!; x.imageSmoothingQuality = 'high'; x.drawImage(im.img, 0, 0, c.width, c.height)
+  let px: ImageData
+  try { px = x.getImageData(0, 0, c.width, c.height) } catch { return c }   // unreadable pixels: keep the original colours
+  const p = px.data, lumAt = (i: number) => 0.2126 * p[i] + 0.7152 * p[i + 1] + 0.0722 * p[i + 2]
+  let lo = 255, hi = 0
+  for (let i = 0; i < p.length; i += 4) if (p[i + 3] > 128) { const v = lumAt(i); if (v < lo) lo = v; if (v > hi) hi = v }
+  const stops = [[6, 128, 74], [0, 230, 118], [222, 255, 238]]              // deep green → accent → near-white mint
+  for (let i = 0; i < p.length; i += 4) {
+    const t = hi - lo < 20 ? 0.5 : Math.min(1, Math.max(0, (lumAt(i) - lo) / (hi - lo)))
+    const s = t < 0.5 ? 0 : 1, k = t * 2 - s
+    for (let j = 0; j < 3; j++) p[i + j] = stops[s][j] + (stops[s + 1][j] - stops[s][j]) * k
+  }
+  x.putImageData(px, 0, 0); return c
+}
+function crest(ctx: CanvasRenderingContext2D, im: Loaded | null, name: string, cx: number, cy: number, size: number, alpha = 1, mono = false) {
   const d = dbg(); if (d) (d.meta.crests as string[] | undefined)?.push(im ? im.source : 'fallback')
   ctx.save(); ctx.globalAlpha = alpha
-  if (im) { const k = Math.min(size / im.w, size / im.h); ctx.drawImage(im.img, cx - (im.w * k) / 2, cy - (im.h * k) / 2, im.w * k, im.h * k) }
+  if (im) { const k = Math.min(size / im.w, size / im.h), w = im.w * k, h = im.h * k; ctx.drawImage(mono ? monoCrest(im, w, h) : im.img, cx - w / 2, cy - h / 2, w, h) }
   else { // intentional fallback: a quiet ring with initials, same footprint as a crest
-    ctx.strokeStyle = COLOR.ink; ctx.lineWidth = HAIR * 2; ctx.beginPath(); ctx.arc(cx, cy, size / 2 - 2, 0, Math.PI * 2); ctx.stroke()
-    text(ctx, initials(name), cx, cy + size * 0.13, { size: size * 0.36, weight: WEIGHT.display, align: 'center' })
+    ctx.strokeStyle = mono ? COLOR.accent : COLOR.ink; ctx.lineWidth = HAIR * 2; ctx.beginPath(); ctx.arc(cx, cy, size / 2 - 2, 0, Math.PI * 2); ctx.stroke()
+    text(ctx, initials(name), cx, cy + size * 0.13, { size: size * 0.36, weight: WEIGHT.display, align: 'center', color: mono ? COLOR.accent : COLOR.ink })
   }
   ctx.restore()
 }
@@ -275,14 +292,15 @@ function headline(ctx: CanvasRenderingContext2D, l: L, s: string, base: number, 
   return size
 }
 
-/** Score numeral, set tall and narrow (horizontal squeeze) so it can be huge inside a narrow column. */
-function numeral(ctx: CanvasRenderingContext2D, s: string, cx: number, base: number, size: number, maxW: number) {
-  const squeeze = 0.68; let sz = size
-  const wide = () => width(ctx, s, sz, WEIGHT.display, 0, -0.03 * sz) * squeeze
-  while (wide() > maxW && sz > 90) sz -= 4
+/** Score figures in the condensed display face, centred on cx; shrinks (2-digit scores) to fit maxW. */
+function numeral(ctx: CanvasRenderingContext2D, s: string, cx: number, base: number, size: number, maxW: number, color: string) {
+  let sz = size
+  const wide = () => { ctx.font = `400 ${sz}px ${SCORE_FONT}`; return ctx.measureText(s).width }
+  if (lsOk(ctx)) (ctx as unknown as { letterSpacing: string }).letterSpacing = '0px'
+  while (wide() > maxW && sz > 60) sz -= 4
   const w = wide(), x = cx - w / 2
-  ctx.save(); ctx.translate(x, base); ctx.scale(squeeze, 1); ctx.fillStyle = COLOR.accent; ctx.textAlign = 'left'; font(ctx, sz, WEIGHT.display, -0.03 * sz); ctx.fillText(s, 0, 0); ctx.restore()
-  const d = dbg(); if (d) d.texts.push({ t: s, x, y: base - sz * 0.72, w, h: sz * 0.73 })
+  ctx.save(); ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.font = `400 ${sz}px ${SCORE_FONT}`; ctx.fillText(s, x, base); ctx.restore()
+  const d = dbg(); if (d) d.texts.push({ t: s, x, y: base - sz * 0.7, w, h: sz * 0.71 })
 }
 
 /** One scorer: minutes then surname, hugging the centre line. */
@@ -312,7 +330,7 @@ function matchPoster(ctx: CanvasRenderingContext2D, l: L, inp: RenderInput, with
   const headBottom = y + SPACE.s2
 
   // measure the lower parts first so the whole block can be centred in the space left
-  const nSize = compact ? 400 : 520, capH = nSize * 0.72, lh = compact ? 44 : 50, size = compact ? 30 : 33
+  const capH = compact ? 288 : 374, nSize = capH / 0.7, lh = compact ? 44 : 50, size = compact ? 30 : 33
   const pens = m.homePens !== undefined && m.awayPens !== undefined, pensH = pens ? (compact ? 124 : 160) : 0
   const note = withScorers ? incompleteNote(data) : '', noteH = note ? SPACE.s6 : 0
   const lists = (['home', 'away'] as Side[]).map((sd) => (withScorers ? data.scorers.filter((s) => s.side === sd) : []))
@@ -330,9 +348,9 @@ function matchPoster(ctx: CanvasRenderingContext2D, l: L, inp: RenderInput, with
     const nm = wrap(ctx, nameOf(t).toUpperCase(), TEAM_COL, 32, WEIGHT.display, 3, 18), nlh = nm.size * 1.12
     const ty = top + (capH - (nm.lines.length * nlh + SPACE.s3 + cs)) / 2
     nm.lines.forEach((ln, k) => text(ctx, ln, colX, ty + nm.size * 0.8 + k * nlh, { size: nm.size, weight: WEIGHT.display, align: 'center', maxW: TEAM_COL, min: 16 }))
-    crest(ctx, home ? inp.imgs.home : inp.imgs.away, t.name, colX, ty + nm.lines.length * nlh + SPACE.s3 + cs / 2, cs)
+    crest(ctx, home ? inp.imgs.home : inp.imgs.away, t.name, colX, ty + nm.lines.length * nlh + SPACE.s3 + cs / 2, cs, 1, true)
     const a = home ? l.x0 + TEAM_COL + 8 : l.cx + SPLIT, b = home ? l.cx - SPLIT : l.x1 - TEAM_COL - 8
-    numeral(ctx, String(scoreOf(inp, sd)), (a + b) / 2, top + capH, nSize, b - a)
+    numeral(ctx, String(scoreOf(inp, sd)), (a + b) / 2, top + capH, nSize, b - a, COLOR.accent)
   })
 
   // scorers
@@ -353,8 +371,8 @@ function matchPoster(ctx: CanvasRenderingContext2D, l: L, inp: RenderInput, with
   if (note) { text(ctx, note, l.cx, by + SPACE.s4 + SPACE.s1, { size: 24, weight: WEIGHT.text, color: SOFT, align: 'center', maxW: W, min: 16 }); by += noteH }
   if (pens) {
     text(ctx, 'PENALTIES', l.cx, by + SPACE.s6, { size: 30, weight: WEIGHT.display, ls: 0.1, color: COLOR.accent, align: 'center' })
-    const ps = compact ? 68 : 88
-    text(ctx, `${m.homePens}–${m.awayPens}`, l.cx, by + SPACE.s6 + SPACE.s2 + ps * 0.8, { size: ps, weight: WEIGHT.display, align: 'center' })
+    const ps = compact ? 92 : 120
+    numeral(ctx, `${m.homePens}–${m.awayPens}`, l.cx, by + SPACE.s6 + SPACE.s2 + ps * 0.7, ps, W, COLOR.ink)
   }
   footer(ctx, l, inp)
 }

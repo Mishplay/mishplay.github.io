@@ -19,7 +19,7 @@ export const imageHandler = (opts: { noPhotos?: boolean; noCrests?: boolean } = 
   if (/headshots/.test(u) ? opts.noPhotos : opts.noCrests) return r.fulfill({ status: 404, contentType: 'text/html', headers: cors, body: '404' })
   if (/headshots/.test(u)) return r.fulfill({ status: 200, contentType: 'image/svg+xml', headers: cors, body: '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="436" viewBox="0 0 600 436"><circle cx="300" cy="150" r="95" fill="#c9a07a"/><path d="M110 436c0-130 80-190 190-190s190 60 190 190z" fill="#e2e8f0"/></svg>' })
   const id = Number(/(\d+)\.png/.exec(u)?.[1] ?? 0); const hue = (id * 47) % 360
-  return r.fulfill({ status: 200, contentType: 'image/svg+xml', headers: cors, body: `<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500"><path d="M60 40h380v230c0 110-90 170-190 200C150 440 60 380 60 270z" fill="hsl(${hue} 70% 48%)" stroke="#fff" stroke-width="14"/><text x="250" y="290" font-size="190" font-weight="900" text-anchor="middle" fill="#fff" font-family="Arial">${String(id).slice(-2)}</text></svg>` })
+  return r.fulfill({ status: 200, contentType: 'image/svg+xml', headers: cors, body: `<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500"><path d="M60 40h380v230c0 110-90 170-190 200C150 440 60 380 60 270z" fill="hsl(${hue} 70% 48%)" stroke="#fff" stroke-width="14"/><path d="M250 100l36 92 99 6-76 63 25 96-84-54-84 54 25-96-76-63 99-6z" fill="#fff"/></svg>` })
 }
 
 /** Adversarial but realistic names (live data has e.g. "Real Racing Club de Santander", "RCD Espanyol de Barcelona"). */

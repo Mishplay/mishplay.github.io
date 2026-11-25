@@ -297,7 +297,7 @@ test.describe('share poster system', () => {
 
   test('typeface is the bundled Hanken Grotesk (not a fallback) when drawing', async ({ context, page }) => {
     await setup(context); await openEditor(page)
-    expect(await page.evaluate(() => document.fonts.check('800 64px "Hanken Grotesk"') && document.fonts.check('500 40px "Hanken Grotesk"'))).toBe(true)
+    expect(await page.evaluate(() => document.fonts.check('800 64px "Hanken Grotesk"') && document.fonts.check('500 40px "Hanken Grotesk"') && document.fonts.check('400 200px "Bebas Neue"'))).toBe(true)
   })
 
   test('temporary resources are released when the editor closes', async ({ context, page }) => {

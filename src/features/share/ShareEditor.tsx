@@ -4,6 +4,7 @@ import '@fontsource/hanken-grotesk/latin-500.css'
 import '@fontsource/hanken-grotesk/latin-800.css'
 import '@fontsource/hanken-grotesk/latin-ext-500.css'
 import '@fontsource/hanken-grotesk/latin-ext-800.css'
+import '@fontsource/bebas-neue/latin-400.css'
 import { Chip, Tabs, cx } from '../../components/ui'
 import { useOnline } from '../../hooks/useSwr'
 import { useSettings } from '../../app/settings'
@@ -77,7 +78,7 @@ export default function ShareEditor({ match, detail, detailLoading, competitionN
   useEffect(() => {
     const sample = `0123456789${match.home.name}${match.away.name}${data.candidates.map((c) => c.name).join('')}`
     let alive = true
-    Promise.all([document.fonts.load('800 64px "Hanken Grotesk"', sample), document.fonts.load('500 40px "Hanken Grotesk"', sample)]).catch(() => undefined).finally(() => alive && setFontReady(true))
+    Promise.all([document.fonts.load('800 64px "Hanken Grotesk"', sample), document.fonts.load('500 40px "Hanken Grotesk"', sample), document.fonts.load('400 200px "Bebas Neue"', '0123456789–')]).catch(() => undefined).finally(() => alive && setFontReady(true))
     return () => { alive = false }
   }, [match.home.name, match.away.name, data.candidates])
   useEffect(() => () => releaseImages(), [])
