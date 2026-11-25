@@ -99,30 +99,13 @@ function deepen(hex: string): string | null {
   const [R, G, B] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x]
   return `rgb(${Math.round((R + m0) * 255)},${Math.round((G + m0) * 255)},${Math.round((B + m0) * 255)})`
 }
-/** A crest recoloured in shades of the app green: each pixel's brightness picks the shade, so inner detail survives; transparency is kept. */
-function monoCrest(im: Loaded, w: number, h: number): CanvasImageSource {
-  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h))
-  const x = c.getContext('2d', { willReadFrequently: true })!; x.imageSmoothingQuality = 'high'; x.drawImage(im.img, 0, 0, c.width, c.height)
-  let px: ImageData
-  try { px = x.getImageData(0, 0, c.width, c.height) } catch { return c }   // unreadable pixels: keep the original colours
-  const p = px.data, lumAt = (i: number) => 0.2126 * p[i] + 0.7152 * p[i + 1] + 0.0722 * p[i + 2]
-  let lo = 255, hi = 0
-  for (let i = 0; i < p.length; i += 4) if (p[i + 3] > 128) { const v = lumAt(i); if (v < lo) lo = v; if (v > hi) hi = v }
-  const stops = [[6, 128, 74], [0, 230, 118], [222, 255, 238]]              // deep green → accent → near-white mint
-  for (let i = 0; i < p.length; i += 4) {
-    const t = hi - lo < 20 ? 0.5 : Math.min(1, Math.max(0, (lumAt(i) - lo) / (hi - lo)))
-    const s = t < 0.5 ? 0 : 1, k = t * 2 - s
-    for (let j = 0; j < 3; j++) p[i + j] = stops[s][j] + (stops[s + 1][j] - stops[s][j]) * k
-  }
-  x.putImageData(px, 0, 0); return c
-}
-function crest(ctx: CanvasRenderingContext2D, im: Loaded | null, name: string, cx: number, cy: number, size: number, alpha = 1, mono = false) {
+function crest(ctx: CanvasRenderingContext2D, im: Loaded | null, name: string, cx: number, cy: number, size: number, alpha = 1) {
   const d = dbg(); if (d) (d.meta.crests as string[] | undefined)?.push(im ? im.source : 'fallback')
   ctx.save(); ctx.globalAlpha = alpha
-  if (im) { const k = Math.min(size / im.w, size / im.h), w = im.w * k, h = im.h * k; ctx.drawImage(mono ? monoCrest(im, w, h) : im.img, cx - w / 2, cy - h / 2, w, h) }
+  if (im) { const k = Math.min(size / im.w, size / im.h), w = im.w * k, h = im.h * k; ctx.drawImage(im.img, cx - w / 2, cy - h / 2, w, h) }
   else { // intentional fallback: a quiet ring with initials, same footprint as a crest
-    ctx.strokeStyle = mono ? COLOR.accent : COLOR.ink; ctx.lineWidth = HAIR * 2; ctx.beginPath(); ctx.arc(cx, cy, size / 2 - 2, 0, Math.PI * 2); ctx.stroke()
-    text(ctx, initials(name), cx, cy + size * 0.13, { size: size * 0.36, weight: WEIGHT.display, align: 'center', color: mono ? COLOR.accent : COLOR.ink })
+    ctx.strokeStyle = COLOR.ink; ctx.lineWidth = HAIR * 2; ctx.beginPath(); ctx.arc(cx, cy, size / 2 - 2, 0, Math.PI * 2); ctx.stroke()
+    text(ctx, initials(name), cx, cy + size * 0.13, { size: size * 0.36, weight: WEIGHT.display, align: 'center' })
   }
   ctx.restore()
 }
@@ -348,7 +331,7 @@ function matchPoster(ctx: CanvasRenderingContext2D, l: L, inp: RenderInput, with
     const nm = wrap(ctx, nameOf(t).toUpperCase(), TEAM_COL, 32, WEIGHT.display, 3, 18), nlh = nm.size * 1.12
     const ty = top + (capH - (nm.lines.length * nlh + SPACE.s3 + cs)) / 2
     nm.lines.forEach((ln, k) => text(ctx, ln, colX, ty + nm.size * 0.8 + k * nlh, { size: nm.size, weight: WEIGHT.display, align: 'center', maxW: TEAM_COL, min: 16 }))
-    crest(ctx, home ? inp.imgs.home : inp.imgs.away, t.name, colX, ty + nm.lines.length * nlh + SPACE.s3 + cs / 2, cs, 1, true)
+    crest(ctx, home ? inp.imgs.home : inp.imgs.away, t.name, colX, ty + nm.lines.length * nlh + SPACE.s3 + cs / 2, cs)
     const a = home ? l.x0 + TEAM_COL + 8 : l.cx + SPLIT, b = home ? l.cx - SPLIT : l.x1 - TEAM_COL - 8
     numeral(ctx, String(scoreOf(inp, sd)), (a + b) / 2, top + capH, nSize, b - a, COLOR.accent)
   })
