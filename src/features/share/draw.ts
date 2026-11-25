@@ -52,7 +52,7 @@ function text(ctx: CanvasRenderingContext2D, s: string, x: number, base: number,
   const weight = o.weight ?? WEIGHT.text; let size = o.size, str = s
   const ls = o.ls ?? 0
   if (o.maxW) { while (width(ctx, str, size, weight, o.track, ls * size) > o.maxW && size > (o.min ?? o.size * 0.6)) size -= 2 }
-  if (o.maxW) { while (width(ctx, str, size, weight, o.track, ls * size) > o.maxW && str.length > 2) str = str.slice(0, -1); if (str !== s) str = str.trimEnd() + '…' }
+  if (o.maxW && width(ctx, str, size, weight, o.track, ls * size) > o.maxW) { do str = str.slice(0, -1); while (str.length > 2 && width(ctx, str.trimEnd() + '…', size, weight, o.track, ls * size) > o.maxW); str = str.trimEnd() + '…' }
   const w = width(ctx, str, size, weight, o.track, ls * size)
   let left = o.align === 'center' ? x - w / 2 : o.align === 'right' ? x - w : x
   let box = { x: 0, w: 0 }, hasBox = false
@@ -114,19 +114,6 @@ function crest(ctx: CanvasRenderingContext2D, im: Loaded | null, name: string, c
 const dateShort = (d: ShareData) => new Date(d.match.kickoffUtc).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase()
 const nameOf = (t: Team) => t.name
 
-/** Meta row + status line + hairline. Returns the y where content may start. */
-function header(ctx: CanvasRenderingContext2D, l: L, inp: RenderInput, o: { accentStatus: boolean; accent?: string }): number {
-  const { data } = inp, base = l.top + TYPE.label.size
-  text(ctx, (data.competition ?? '').toUpperCase(), l.x0, base, { ...TYPE.label, color: COLOR.muted, maxW: (l.x1 - l.x0) * 0.62, min: 18 })
-  text(ctx, dateShort(data), l.x1, base, { ...TYPE.label, color: COLOR.muted, align: 'right' })
-  const st = data.status, sb = base + SPACE.s6 + SPACE.s1
-  const live = st.kind === 'live', col = live ? COLOR.live : o.accentStatus && st.kind === 'final' ? (o.accent ?? COLOR.accent) : COLOR.ink
-  const label = st.kind === 'stale' ? 'LAST SCORE' : st.label
-  ctx.save(); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(l.x0 + 7, sb - TYPE.label.size * 0.34, 7, 0, Math.PI * 2); ctx.fill(); ctx.restore()
-  const w = text(ctx, label, l.x0 + SPACE.s4, sb, { ...TYPE.label, color: col })
-  if (st.note) text(ctx, st.note.toUpperCase(), l.x1, sb, { ...TYPE.label, color: COLOR.muted, align: 'right', maxW: l.x1 - l.x0 - w - SPACE.s8, min: 16 })
-  const hy = sb + SPACE.s4; hair(ctx, l, hy); return hy + HAIR
-}
 function footer(ctx: CanvasRenderingContext2D, l: L, inp: RenderInput, o: { rule?: boolean; center?: boolean } = {}) {
   const base = l.bottom - SPACE.s1
   if (o.rule !== false) hair(ctx, l, l.bottom - SPACE.s12 + SPACE.s1)
@@ -141,7 +128,6 @@ function footer(ctx: CanvasRenderingContext2D, l: L, inp: RenderInput, o: { rule
 const footerTop = (l: L) => l.bottom - SPACE.s12 + SPACE.s1
 
 function scoreOf(inp: RenderInput, side: Side) { const m = inp.data.match; return side === 'home' ? m.homeScore! : m.awayScore! }
-const dimFor = (inp: RenderInput, side: Side) => (inp.data.leader && inp.data.leader !== 'level' && inp.data.leader !== side ? COLOR.dimAlpha : 1)
 
 function surnameItem(s: Scorer, showMinutes: boolean): string {
   const nm = splitName(s.name).surname + (s.ownGoals ? ' (OG)' : '')
@@ -225,81 +211,155 @@ function grade(ctx: CanvasRenderingContext2D, l: L, base = 0.4) {
   const g = ctx.createLinearGradient(0, 0, 0, l.H); g.addColorStop(0, 'rgba(6,8,11,0.82)'); g.addColorStop(0.3, 'rgba(6,8,11,0.12)'); g.addColorStop(0.58, 'rgba(6,8,11,0.18)'); g.addColorStop(1, 'rgba(6,8,11,0.94)')
   ctx.fillStyle = g; ctx.fillRect(0, 0, l.W, l.H)
 }
+
+// ───────────────────────── match-poster kit art: halftone, diagonal streaks, corner sweeps (all drawn, nothing sourced) ─────────────────────────
+const seeded = (seed: number) => () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296)
+/** dots on a 22px grid, largest in the corner (x, y) and fading out over radius r */
+function halftone(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+  ctx.save(); ctx.fillStyle = COLOR.accent; ctx.globalAlpha = 0.5
+  for (let j = -Math.ceil(r / 22); j <= r / 22; j++) for (let i = -Math.ceil(r / 22); i <= r / 22; i++) {
+    const px = x + i * 22 + (j & 1) * 11, py = y + j * 22, k = 1 - Math.hypot(px - x, py - y) / r
+    if (k > 0.04) { ctx.beginPath(); ctx.arc(px, py, 7.5 * k, 0, Math.PI * 2); ctx.fill() }
+  }
+  ctx.restore()
+}
+/** a dry-brush sweep: many thin, slightly scattered curves from one edge to another */
+function sweep(ctx: CanvasRenderingContext2D, from: [number, number], via: [number, number], to: [number, number], spread: number, seed: number) {
+  const rnd = seeded(seed); ctx.save(); ctx.strokeStyle = COLOR.accent; ctx.lineCap = 'round'
+  for (let i = 0; i < 90; i++) {
+    const o = (rnd() - 0.5) * spread, t = (rnd() - 0.5) * spread * 0.8
+    ctx.globalAlpha = 0.12 + rnd() * 0.55 * (1 - Math.abs(o) / spread); ctx.lineWidth = 1 + rnd() * 9
+    ctx.beginPath(); ctx.moveTo(from[0] + t, from[1] + o); ctx.quadraticCurveTo(via[0] + o, via[1] + o, to[0] + o, to[1] + t); ctx.stroke()
+  }
+  ctx.restore()
+}
+function kitDecor(ctx: CanvasRenderingContext2D, l: L) {
+  const { W, H } = l, k = Math.max(0.6, l.top / 270)                   // smaller corners on the 4:5 post, which has less spare margin
+  ctx.save(); ctx.strokeStyle = COLOR.accent; ctx.globalAlpha = 0.045; ctx.lineWidth = 26
+  for (let x = -H; x < W; x += 92) { ctx.beginPath(); ctx.moveTo(x, H); ctx.lineTo(x + H * 0.55, 0); ctx.stroke() }
+  ctx.restore()
+  halftone(ctx, W, 0, 520 * k); halftone(ctx, 0, H - 380 * k, 400 * k)
+  sweep(ctx, [W - 420 * k, -40], [W - 90 * k, 60 * k], [W + 40, 330 * k], 110 * k, 11)
+  sweep(ctx, [-40, H - 330 * k], [140 * k, H - 90 * k], [520 * k, H + 40], 150 * k, 29)
+}
+/** MishPlay's match-day field: obsidian-to-emerald with the kit art. */
+function kit(ctx: CanvasRenderingContext2D, l: L) {
+  const g = ctx.createLinearGradient(0, 0, 0, l.H); g.addColorStop(0, '#08351F'); g.addColorStop(0.5, '#052316'); g.addColorStop(1, '#04100B')
+  ctx.fillStyle = g; ctx.fillRect(0, 0, l.W, l.H)
+  glow(ctx, l.cx, l.H * 0.45, 760, 'rgba(0,230,118,0.10)')
+  kitDecor(ctx, l); grain(ctx, l.W, l.H)
+}
 function backdrop(ctx: CanvasRenderingContext2D, l: L, inp: RenderInput) {
   const d = dbg(); const src = inp.kind === 'player' && inp.imgs.portrait ? inp.imgs.portrait : inp.background === 'photo' ? inp.imgs.bg : null
   if (d) d.meta.backdrop = src ? (inp.kind === 'player' && inp.imgs.portrait ? 'portrait-blur' : 'photo-blur') : 'atmosphere'
-  if (!src) { atmosphere(ctx, l); return }
+  if (!src) { if (inp.kind === 'match') kit(ctx, l); else atmosphere(ctx, l); return }
   ctx.fillStyle = COLOR.bg; ctx.fillRect(0, 0, l.W, l.H)
   blurredCover(ctx, src, l.W, l.H, inp.kind === 'player' ? 30 : 16, 0.5, inp.kind === 'player' ? 0.2 : 0.5)
-  grade(ctx, l, inp.kind === 'player' ? 0.5 : 0.38); grain(ctx, l.W, l.H, 0.06)
+  grade(ctx, l, inp.kind === 'player' ? 0.5 : 0.38); if (inp.kind === 'match') kitDecor(ctx, l); grain(ctx, l.W, l.H, 0.06)
 }
 function rr(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h) }
 
-// ═════════════════════════ A/B. MATCH RESULT (side by side) ═════════════════════════
-/** crest + name | score | crest + name, straight on the background. Returns the block's bottom y. */
-function scoreband(ctx: CanvasRenderingContext2D, l: L, inp: RenderInput, top: number, bandH: number): number {
-  const m = inp.data.match, W = l.x1 - l.x0, pad = 28, inner = W - pad * 2, side = 262, mid = inner - side * 2, cy = top + bandH / 2
-  // no box: the scoreline sits directly on the (blurred, graded) background
-  const cs = Math.min(176, bandH * 0.36), nsz = 34
+// ═════════════════════════ A/B. MATCH POSTER ═════════════════════════
+// Big status headline, then two halves split by a hairline: [name + crest] [numeral] | [numeral] [name + crest],
+// with each side's scorers under its numeral and the shoot-out score (only if there was one) at the bottom.
+const SOFT = 'rgba(245,246,248,0.74)'
+const SPLIT = 24                                   // clear space either side of the centre line
+const TEAM_COL = 196                               // outer column holding the club name and crest
+
+/** The headline: solid word with an offset outline echo behind it. */
+function headline(ctx: CanvasRenderingContext2D, l: L, s: string, base: number, max: number, color: string): number {
+  const W = l.x1 - l.x0 - 12; let size = max
+  while (width(ctx, s, size, WEIGHT.display, 0, -0.02 * size) > W && size > 60) size -= 2
+  ctx.save(); font(ctx, size, WEIGHT.display, -0.02 * size); ctx.textAlign = 'center'; ctx.strokeStyle = color; ctx.globalAlpha = 0.4; ctx.lineWidth = 3; ctx.strokeText(s, l.cx + 9, base + 11); ctx.restore()
+  text(ctx, s, l.cx, base, { size, weight: WEIGHT.display, ls: -0.02, align: 'center', color, maxW: W, min: 60 })
+  return size
+}
+
+/** Score numeral, set tall and narrow (horizontal squeeze) so it can be huge inside a narrow column. */
+function numeral(ctx: CanvasRenderingContext2D, s: string, cx: number, base: number, size: number, maxW: number) {
+  const squeeze = 0.68; let sz = size
+  const wide = () => width(ctx, s, sz, WEIGHT.display, 0, -0.03 * sz) * squeeze
+  while (wide() > maxW && sz > 90) sz -= 4
+  const w = wide(), x = cx - w / 2
+  ctx.save(); ctx.translate(x, base); ctx.scale(squeeze, 1); ctx.fillStyle = COLOR.accent; ctx.textAlign = 'left'; font(ctx, sz, WEIGHT.display, -0.03 * sz); ctx.fillText(s, 0, 0); ctx.restore()
+  const d = dbg(); if (d) d.texts.push({ t: s, x, y: base - sz * 0.72, w, h: sz * 0.73 })
+}
+
+/** One scorer: minutes then surname, hugging the centre line. */
+function scorerLine(ctx: CanvasRenderingContext2D, s: Scorer, showMinutes: boolean, side: Side, edge: number, base: number, maxW: number, size: number) {
+  const full = splitName(s.name).surname.toUpperCase() + (s.ownGoals ? ' (OG)' : '')
+  const mins = showMinutes && s.minutes.length ? s.minutes.join(' ') : '', count = !mins && s.goals > 1 ? `×${s.goals}` : ''
+  let sz = size, name = full; const gap = 12
+  const tw = () => width(ctx, name, sz, WEIGHT.display) + (mins ? gap + width(ctx, mins, sz, WEIGHT.text) : 0) + (count ? gap + width(ctx, count, sz, WEIGHT.text) : 0)
+  while (tw() > maxW && sz > 22) sz -= 1
+  for (let n = full.length; n > 3 && tw() > maxW; n--) name = full.slice(0, n).trimEnd() + '…'   // last resort only
+  let x = side === 'home' ? edge - tw() : edge
+  if (mins) x += text(ctx, mins, x, base, { size: sz, weight: WEIGHT.text, color: SOFT }) + gap
+  x += text(ctx, name, x, base, { size: sz, weight: WEIGHT.display }) + gap
+  if (count) text(ctx, count, x, base, { size: sz, weight: WEIGHT.text, color: SOFT })
+}
+
+function matchPoster(ctx: CanvasRenderingContext2D, l: L, inp: RenderInput, withScorers: boolean) {
+  const { data } = inp, m = data.match, st = data.status, ft = footerTop(l), compact = l.f < 0.95, W = l.x1 - l.x0
+  const label = st.kind === 'stale' ? 'LAST SCORE' : st.label
+  const hMax = compact ? 168 : 196
+  let y = l.top + hMax * 0.8
+  headline(ctx, l, label, y, hMax, st.kind === 'live' ? COLOR.live : COLOR.accent)
+  y += SPACE.s8
+  const comp = [data.competition, m.round].filter(Boolean).join(' · ').toUpperCase()
+  if (comp) { text(ctx, comp, l.cx, y, { size: 34, weight: WEIGHT.display, ls: 0.06, align: 'center', maxW: W, min: 20 }); y += SPACE.s4 + SPACE.s1 }
+  text(ctx, [dateShort(data), st.note?.toUpperCase()].filter(Boolean).join('  ·  '), l.cx, y, { size: 24, weight: WEIGHT.text, color: SOFT, align: 'center', maxW: W, min: 16 })
+  const headBottom = y + SPACE.s2
+
+  // measure the lower parts first so the whole block can be centred in the space left
+  const nSize = compact ? 400 : 520, capH = nSize * 0.72, lh = compact ? 44 : 50, size = compact ? 30 : 33
+  const pens = m.homePens !== undefined && m.awayPens !== undefined, pensH = pens ? (compact ? 124 : 160) : 0
+  const note = withScorers ? incompleteNote(data) : '', noteH = note ? SPACE.s6 : 0
+  const lists = (['home', 'away'] as Side[]).map((sd) => (withScorers ? data.scorers.filter((s) => s.side === sd) : []))
+  const room = ft - headBottom - SPACE.s6 - capH - SPACE.s4 - pensH - noteH - SPACE.s2
+  const lines = Math.min(Math.max(...lists.map((x) => x.length)), Math.max(0, Math.floor((room - SPACE.s3) / lh)))
+  const listH = lines ? SPACE.s6 + lines * lh : 0
+  const block = capH + listH + noteH + pensH
+  const top = headBottom + Math.max(SPACE.s6, (ft - headBottom - block) / 2)
+
+  // teams and score
   ;(['home', 'away'] as Side[]).forEach((sd) => {
-    const t = sd === 'home' ? m.home : m.away, dim = dimFor(inp, sd), cx = sd === 'home' ? l.x0 + pad + side / 2 : l.x1 - pad - side / 2
-    const w = wrap(ctx, nameOf(t).toUpperCase(), side - 28, nsz, WEIGHT.display, 2, 22, -0.01), lh = w.size * 1.1, block = cs + SPACE.s3 + w.lines.length * lh, y = cy - block / 2
-    crest(ctx, sd === 'home' ? inp.imgs.home : inp.imgs.away, t.name, cx, y + cs / 2, cs, dim)
-    w.lines.forEach((ln, k) => text(ctx, ln, cx, y + cs + SPACE.s3 + w.size * 0.8 + k * lh, { size: w.size, weight: WEIGHT.display, ls: -0.01, align: 'center', alpha: dim, maxW: side - 28, min: 20 }))
+    const home = sd === 'home', t = home ? m.home : m.away
+    const colX = home ? l.x0 + TEAM_COL / 2 : l.x1 - TEAM_COL / 2
+    const cs = compact ? 150 : 172
+    const nm = wrap(ctx, nameOf(t).toUpperCase(), TEAM_COL, 32, WEIGHT.display, 3, 18), nlh = nm.size * 1.12
+    const ty = top + (capH - (nm.lines.length * nlh + SPACE.s3 + cs)) / 2
+    nm.lines.forEach((ln, k) => text(ctx, ln, colX, ty + nm.size * 0.8 + k * nlh, { size: nm.size, weight: WEIGHT.display, align: 'center', maxW: TEAM_COL, min: 16 }))
+    crest(ctx, home ? inp.imgs.home : inp.imgs.away, t.name, colX, ty + nm.lines.length * nlh + SPACE.s3 + cs / 2, cs)
+    const a = home ? l.x0 + TEAM_COL + 8 : l.cx + SPLIT, b = home ? l.cx - SPLIT : l.x1 - TEAM_COL - 8
+    numeral(ctx, String(scoreOf(inp, sd)), (a + b) / 2, top + capH, nSize, b - a)
   })
-  // score: both numerals + dash, centred in the middle column; shrinks for 2-digit scores
-  const hs = String(m.homeScore), as = String(m.awayScore)
-  let sz = 250; const gap = 22, dashW = (s: number) => s * 0.34
-  const total = (s: number) => width(ctx, hs, s, WEIGHT.display, 0, -0.03 * s) + width(ctx, as, s, WEIGHT.display, 0, -0.03 * s) + dashW(s) + gap * 2
-  while (total(sz) > mid - 8 && sz > 90) sz -= 6
-  const capH = sz * 0.72, x0 = l.cx - total(sz) / 2, base = cy + capH / 2, hw = width(ctx, hs, sz, WEIGHT.display, 0, -0.03 * sz)
-  text(ctx, hs, x0, base, { size: sz, weight: WEIGHT.display, ls: -0.03, alpha: dimFor(inp, 'home') })
-  ctx.save(); ctx.fillStyle = COLOR.muted; ctx.fillRect(x0 + hw + gap, cy - 4, dashW(sz), 8); ctx.restore()
-  text(ctx, as, x0 + hw + gap * 2 + dashW(sz), base, { size: sz, weight: WEIGHT.display, ls: -0.03, alpha: dimFor(inp, 'away') })
-  return top + bandH
-}
-const BAND_H = 440
 
-function tResult(ctx: CanvasRenderingContext2D, l: L, inp: RenderInput) {
-  const y0 = header(ctx, l, inp, { accentStatus: true }), ft = footerTop(l)
-  const h = Math.min(BAND_H + 60, ft - y0 - SPACE.s12), top = y0 + (ft - y0 - h) / 2
-  scoreband(ctx, l, inp, top, h)
-  footer(ctx, l, inp)
-}
+  // scorers
+  lists.forEach((list, i) => {
+    if (!lines) return
+    const sd: Side = i === 0 ? 'home' : 'away', edge = sd === 'home' ? l.cx - SPLIT : l.cx + SPLIT, maxW = W / 2 - SPLIT
+    const shown = list.slice(0, list.length > lines ? Math.max(0, lines - 1) : lines), more = list.length - shown.length
+    const y0 = top + capH + SPACE.s6 + size * 0.8
+    shown.forEach((s, k) => scorerLine(ctx, s, inp.showMinutes, sd, edge, y0 + k * lh, maxW, size))
+    if (more > 0) text(ctx, `+${more} more`, edge, y0 + shown.length * lh, { size: size - 4, weight: WEIGHT.text, color: SOFT, align: sd === 'home' ? 'right' : 'left' })
+  })
 
-/** one scorer per line, centred in its column: surname + minutes (minutes in the muted tone) */
-function scorerLine(ctx: CanvasRenderingContext2D, s: Scorer, showMinutes: boolean, cx: number, base: number, maxW: number, alpha: number, size: number) {
-  const nm = splitName(s.name).surname + (s.ownGoals ? ' (OG)' : ''), mins = showMinutes && s.minutes.length ? s.minutes.join(' ') : s.goals > 1 ? `×${s.goals}` : ''
-  let sz = size, name = nm; const gap = 12, tw = (z: number) => width(ctx, name, z, WEIGHT.text) + (mins ? gap + width(ctx, mins, z, WEIGHT.text) : 0)
-  while (tw(sz) > maxW && sz > 28) sz -= 2
-  if (tw(sz) > maxW) { const base = nm.replace(/…$/, ''); let n = base.length; while (n > 3 && (name = base.slice(0, n).trimEnd() + '…', tw(sz) > maxW)) n-- }   // last resort only
-  const total = width(ctx, name, sz, WEIGHT.text) + (mins ? gap + width(ctx, mins, sz, WEIGHT.text) : 0), x = cx - total / 2
-  const w = text(ctx, name, x, base, { size: sz, weight: WEIGHT.text, alpha })
-  if (mins) text(ctx, mins, x + w + gap, base, { size: sz, weight: WEIGHT.text, color: COLOR.muted, alpha })
-}
+  // centre line: spans the numerals and the scorer lists
+  const lineBottom = top + capH + listH
+  ctx.save(); ctx.fillStyle = 'rgba(245,246,248,0.55)'; ctx.fillRect(l.cx - 1.5, top - SPACE.s2, 3, lineBottom - top + SPACE.s2); ctx.restore()
 
-function tScorers(ctx: CanvasRenderingContext2D, l: L, inp: RenderInput) {
-  const { data } = inp, y0 = header(ctx, l, inp, { accentStatus: true }), ft = footerTop(l)
-  const note = inp.showScorers ? incompleteNote(data) : ''
-  const bandH = l.f > 0.95 ? BAND_H : 400, gap = SPACE.s8, lh = 58, size = 40
-  const avail = ft - y0 - SPACE.s6, noteH = note ? SPACE.s6 : 0
-  const cap = inp.showScorers ? Math.max(1, Math.floor((avail - bandH - gap - noteH) / lh)) : 0
-  const lines = inp.showScorers ? Math.min(cap, Math.max(1, ...(['home', 'away'] as Side[]).map((sd) => data.scorers.filter((x) => x.side === sd).length))) : 0
-  const colH = lines * lh, block = bandH + (lines ? gap : 0) + colH + noteH, top = y0 + Math.max(SPACE.s3, (avail - block) / 2)
-  const bandBottom = scoreband(ctx, l, inp, top, bandH)
-  if (inp.showScorers) {
-    const W = l.x1 - l.x0, colW = (W - SPACE.s6) / 2, cxs = { home: l.x0 + colW / 2, away: l.x1 - colW / 2 }
-    ;(['home', 'away'] as Side[]).forEach((sd) => {
-      const list = data.scorers.filter((s) => s.side === sd), cap = list.length > lines ? Math.max(0, lines - 1) : lines
-      const shown = list.slice(0, cap), more = list.length - shown.length, alpha = dimFor(inp, sd)
-      const y = bandBottom + gap + size * 0.8
-      shown.forEach((s, i) => scorerLine(ctx, s, inp.showMinutes, cxs[sd], y + i * lh, colW, alpha === 1 ? 1 : 0.8, size))
-      if (more > 0) text(ctx, `+${more} more`, cxs[sd], y + shown.length * lh, { size: 32, weight: WEIGHT.text, color: COLOR.muted, align: 'center' })
-    })
-    if (note) text(ctx, note, l.cx, bandBottom + gap + colH + SPACE.s3, { ...TYPE.label, color: COLOR.muted, align: 'center', maxW: l.x1 - l.x0, min: 16 })
+  let by = lineBottom
+  if (note) { text(ctx, note, l.cx, by + SPACE.s4 + SPACE.s1, { size: 24, weight: WEIGHT.text, color: SOFT, align: 'center', maxW: W, min: 16 }); by += noteH }
+  if (pens) {
+    text(ctx, 'PENALTIES', l.cx, by + SPACE.s6, { size: 30, weight: WEIGHT.display, ls: 0.1, color: COLOR.accent, align: 'center' })
+    const ps = compact ? 68 : 88
+    text(ctx, `${m.homePens}–${m.awayPens}`, l.cx, by + SPACE.s6 + SPACE.s2 + ps * 0.8, { size: ps, weight: WEIGHT.display, align: 'center' })
   }
   footer(ctx, l, inp)
 }
+const tResult = (ctx: CanvasRenderingContext2D, l: L, inp: RenderInput) => matchPoster(ctx, l, inp, false)
+const tScorers = (ctx: CanvasRenderingContext2D, l: L, inp: RenderInput) => matchPoster(ctx, l, inp, inp.showScorers)
 
 // ═════════════════════════ D. FAN CELEBRATION ═════════════════════════
 function tFan(ctx: CanvasRenderingContext2D, l: L, inp: RenderInput) {
@@ -318,8 +378,9 @@ function tFan(ctx: CanvasRenderingContext2D, l: L, inp: RenderInput) {
   w.lines.forEach((ln, k) => text(ctx, ln, l.cx, y + k * lh, { size: w.size, weight: WEIGHT.display, ls: -0.02, align: 'center', maxW: l.x1 - l.x0, min: 30 }))
   y += (w.lines.length - 1) * lh + SPACE.s12
   const ts = scoreOf(inp, side), os = scoreOf(inp, side === 'home' ? 'away' : 'home'), st = data.status.kind
-  const verb = st === 'final' ? (ts > os ? 'WIN' : ts < os ? 'DEFEAT' : 'DRAW') : st === 'stale' ? 'LAST SCORE' : st === 'halftime' ? 'HALF TIME' : 'LIVE'
-  text(ctx, `${verb}  ${ts}–${os}`, l.cx, y, { size: 60, weight: WEIGHT.display, align: 'center', maxW: l.x1 - l.x0, min: 30 })
+  const tp = side === 'home' ? m.homePens : m.awayPens, op = side === 'home' ? m.awayPens : m.homePens, shootout = st === 'final' && ts === os && tp !== undefined && op !== undefined && tp !== op
+  const verb = shootout ? (tp! > op! ? 'WIN ON PENS' : 'OUT ON PENS') : st === 'final' ? (ts > os ? 'WIN' : ts < os ? 'DEFEAT' : 'DRAW') : st === 'stale' ? 'LAST SCORE' : st === 'halftime' ? 'HALF TIME' : 'LIVE'
+  text(ctx, `${verb}  ${ts}–${os}${shootout ? ` (${tp}–${op})` : ''}`, l.cx, y, { size: 60, weight: WEIGHT.display, align: 'center', maxW: l.x1 - l.x0, min: 30 })
   y += SPACE.s6 + SPACE.s2
   text(ctx, `v ${nameOf(o)}`, l.cx, y, { size: TYPE.small.size, weight: WEIGHT.text, color: COLOR.ink, alpha: 0.7, align: 'center', maxW: l.x1 - l.x0, min: 22 })
   // footer stack (bottom-anchored): date, then wordmark — fixed rhythm, nothing floats

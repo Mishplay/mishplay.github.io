@@ -27,7 +27,7 @@ export default function ShareEditor({ match, detail, detailLoading, competitionN
   const topScorer = data.candidates.find((c) => c.goals > 0) ?? data.candidates[0]
   const [kind, setKind] = useState<'match' | 'player'>(initialKind === 'player' || !data.hasResult ? 'player' : 'match')
   const [format, setFormat] = useState<FormatId>('story')
-  const [mTpl, setMTpl] = useState<MatchTemplateId>('result')
+  const [mTpl, setMTpl] = useState<MatchTemplateId>('scorers')
   const [showScorers, setShowScorers] = useState(true)
   const [showMinutes, setShowMinutes] = useState(true)
   const [guides, setGuides] = useState(false)
@@ -131,7 +131,7 @@ export default function ShareEditor({ match, detail, detailLoading, competitionN
         {kind === 'match' && <Section title="Template"><div className="hide-scroll flex gap-2 overflow-x-auto">{MATCH_TEMPLATES.map((t) => <Chip key={t.id} active={mTpl === t.id} onClick={() => setMTpl(t.id)}>{t.label}</Chip>)}</div></Section>}
 
         {!(kind === 'match' && mTpl === 'fan') && !activePortrait && <Section title="Background"><div className="hide-scroll flex gap-2 overflow-x-auto" role="group" aria-label="Background">
-          <Chip active={background === 'atmosphere'} onClick={() => setBackground('atmosphere')}>MishPlay glow</Chip><Chip active={background === 'photo'} onClick={() => setBackground('photo')}>Stadium night</Chip></div>
+          <Chip active={background === 'atmosphere'} onClick={() => setBackground('atmosphere')}>{kind === 'match' ? 'MishPlay green' : 'MishPlay glow'}</Chip><Chip active={background === 'photo'} onClick={() => setBackground('photo')}>Stadium night</Chip></div>
           {background === 'photo' && <p className="mt-2 text-[12px] text-muted">Photo “{BG_NIGHT.credit.title}” by {BG_NIGHT.credit.author}, {BG_NIGHT.credit.licence} (Wikimedia Commons). Blurred and darkened; credited on the image.</p>}</Section>}
         {kind === 'match' && mTpl === 'fan' && <Section title="I support"><div className="flex gap-2">{(['home', 'away'] as Side[]).map((sd) => <Chip key={sd} active={highlight === sd} onClick={() => setHighlight(sd)}>{(sd === 'home' ? match.home : match.away).shortName ?? (sd === 'home' ? match.home : match.away).name}</Chip>)}</div></Section>}
 

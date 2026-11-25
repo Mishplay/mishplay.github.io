@@ -7,9 +7,8 @@ export const COLOR = {
   bg: '#06080B',
   ink: '#F5F6F8',
   muted: '#8A94A6',
-  dimAlpha: 0.68,           // trailing team / secondary emphasis (still clearly readable)
   hair: 'rgba(245,246,248,0.16)',
-  accent: '#00E676',        // MishPlay green: at most ONE accent element per poster
+  accent: '#00E676',        // MishPlay green: the match poster's headline, numerals and kit art; a single accent on the spotlight
   live: '#FF4D5E',
 } as const
 

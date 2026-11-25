@@ -64,6 +64,7 @@ export function toMatch(compId: string, ev: any): Match {
     minute: status === 'live' ? ev.status?.displayClock : undefined,
     homeScore: hasScore ? Number(home.score) : undefined,
     awayScore: hasScore ? Number(away.score) : undefined,
+    ...(home.shootoutScore != null && away.shootoutScore != null ? { homePens: Number(home.shootoutScore), awayPens: Number(away.shootoutScore) } : {}),
     venue: c.venue?.fullName,
     round: ev.week?.number ? `Matchday ${ev.week.number}` : undefined,
     provenance: [prov(String(ev.id))],
@@ -85,6 +86,7 @@ const EVENT_MAP: Array<[RegExp, EventType]> = [
 export function mapEvents(d: any): MatchEvent[] {
   const homeId = d.header?.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.id
   return (d.keyEvents ?? [])
+    .filter((k: any) => !k.shootout) // shoot-out kicks are not match goals
     .map((k: any): MatchEvent => {
       const text: string = k.type?.text ?? ''
       const type = EVENT_MAP.find(([re]) => re.test(text))?.[1] ?? 'other'

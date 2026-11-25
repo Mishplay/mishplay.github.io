@@ -48,6 +48,9 @@ export interface Match {
   minute?: string
   homeScore?: number
   awayScore?: number
+  /** penalty shoot-out score, only when the source reports a shoot-out (not part of home/awayScore) */
+  homePens?: number
+  awayPens?: number
   venue?: string
   round?: string
   /** true when the source gives a local kickoff time with no timezone (show date only) */

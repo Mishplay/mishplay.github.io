@@ -6,11 +6,12 @@ const SHOTS = process.env.SHOTS_DIR ?? ''
 const MATCH_URL = '/match/eng.1/' + encodeURIComponent('eng.1|2026-11-21|man city|fulham')
 
 /** Synthetic datasets (constructed for tests, NOT real matches) built from the real recorded payloads. */
-function synthetic(opts: { hs?: number; as?: number; goals?: [string, string, 'home' | 'away'][]; noMinutes?: boolean; live?: boolean }) {
+function synthetic(opts: { pens?: [number, number]; hs?: number; as?: number; goals?: [string, string, 'home' | 'away'][]; noMinutes?: boolean; live?: boolean }) {
   const board = JSON.parse(fx('espn_scoreboard.json')), sum = JSON.parse(fx('espn_summary.json'))
   const comps = board.events[0].competitions[0].competitors, hc = sum.header.competitions[0].competitors
   if (opts.hs !== undefined) { comps.find((c: any) => c.homeAway === 'home').score = String(opts.hs); hc.find((c: any) => c.homeAway === 'home').score = String(opts.hs) }
   if (opts.as !== undefined) { comps.find((c: any) => c.homeAway === 'away').score = String(opts.as); hc.find((c: any) => c.homeAway === 'away').score = String(opts.as) }
+  if (opts.pens) for (const list of [comps, hc]) { list.find((c: any) => c.homeAway === 'home').shootoutScore = opts.pens[0]; list.find((c: any) => c.homeAway === 'away').shootoutScore = opts.pens[1] }
   if (opts.live) for (const st of [board.events[0].status, sum.header.competitions[0].status]) { st.displayClock = "67'"; st.type = { id: '2', name: 'STATUS_SECOND_HALF', state: 'in', completed: false, description: 'Second Half' } }
   if (opts.goals) {
     const tpl = sum.keyEvents.find((k: any) => k.type?.text === 'Goal')
@@ -89,7 +90,8 @@ test.describe('share poster system', () => {
         expect(joined, `${tpl} ${fmt}: no undefined/NaN`).not.toMatch(/undefined|NaN|null/)
         expect(layoutProblems(d.texts, fmt), `${tpl} ${fmt}`).toEqual([])
         expect(joined).toContain('MANCHESTER CITY'.slice(0, 3) === 'MAN' ? (tpl === 'Fan' ? 'I SUPPORT' : 'MANCHESTER') : '')
-        if (tpl === 'Scorers') { const f = joined.replace(/ \| /g, ' '); expect(f).toContain("Muniz 16'"); expect(f).toContain("Anderson 57'") }
+        if (tpl === 'Scorers') { const f = joined.replace(/ \| /g, ' '); expect(f).toContain("16' MUNIZ"); expect(f).toContain("57' ANDERSON") }
+        expect(joined).not.toContain('PENALTIES')
         if (tpl !== 'Fan') expect(joined).toContain('FULL TIME')
         if (SHOTS) await save(page, `v2-match-${tpl.toLowerCase()}-${fmt.split(' ')[0].toLowerCase()}`)
       }
@@ -100,7 +102,7 @@ test.describe('share poster system', () => {
     await setup(context, HAT); await openEditor(page, HAT)
     await page.getByRole('button', { name: 'Scorers', exact: true }).click(); await settle(page)
     const t = await flat(page)
-    expect(t).toMatch(/Haaland 10' 33' 61'/); expect(t).toContain("Foden 50'"); expect(t).toContain("Doku 88'"); expect(t).toContain("Muniz 20'")
+    expect(t).toContain("10' 33' 61' HAALAND"); expect(t).toContain("50' FODEN"); expect(t).toContain("88' DOKU"); expect(t).toContain("20' MUNIZ")
     expect(t).not.toContain('unavailable'); expect(t).not.toMatch(/\+\d+ more/)
     for (const fmt of ['Story', 'Post 4:5']) {
       await page.getByRole('button', { name: fmt, exact: true }).click(); await settle(page)
@@ -197,12 +199,28 @@ test.describe('share poster system', () => {
     for (const fmt of ['Story', 'Post 4:5']) { await page.getByRole('button', { name: fmt, exact: true }).click(); await settle(page); expect(layoutProblems((await dbg(page)).texts, fmt), `photo bg ${fmt}`).toEqual([]); if (SHOTS) await save(page, `v3-hat-photo-${fmt.split(' ')[0].toLowerCase()}`) }
   })
 
+  test('penalty shoot-out (synthetic 3–3, 4–2 on penalties): shown only when it happened; fan card is not a "draw"', async ({ context, page }) => {
+    const ds = synthetic({ hs: 3, as: 3, pens: [4, 2], goals: [['Erling Haaland', "10'", 'home'], ['Rodrigo Muniz', "20'", 'away'], ['Phil Foden', "33'", 'home'], ['Rodrigo Muniz', "50'", 'away'], ['Jérémy Doku', "88'", 'home'], ['Rodrigo Muniz', "90'+4'", 'away']] })
+    await setup(context, ds); await openEditor(page, ds)
+    for (const fmt of ['Story', 'Post 4:5']) {
+      await page.getByRole('button', { name: fmt, exact: true }).click()
+      for (const tpl of ['Result', 'Scorers']) {
+        await page.getByRole('button', { name: tpl, exact: true }).click(); await settle(page)
+        const d = await dbg(page), t = d.texts.map((x) => x.t)
+        expect(t).toContain('PENALTIES'); expect(t).toContain('4–2'); expect(layoutProblems(d.texts, fmt), `pens ${tpl} ${fmt}`).toEqual([])
+        if (SHOTS) await save(page, `v4-pens-${tpl.toLowerCase()}-${fmt.split(' ')[0].toLowerCase()}`)
+      }
+    }
+    await page.getByRole('button', { name: 'Fan', exact: true }).click(); await settle(page)
+    expect(await allText(page)).toMatch(/WIN ON PENS\s+3–3 \(4–2\)/)
+  })
+
   test('missing goal minutes: scorers kept, minutes omitted, nothing invented', async ({ context, page }) => {
     const ds = synthetic({ hs: 2, as: 0, goals: [['Erling Haaland', '', 'home'], ['Erling Haaland', '', 'home']], noMinutes: true })
     await setup(context, ds); await openEditor(page, ds)
     await page.getByRole('button', { name: 'Scorers', exact: true }).click(); await settle(page)
     const t = await flat(page)
-    expect(t).toMatch(/Haaland ×2/); expect(t).not.toMatch(/Haaland \d+'/); expect(t).not.toMatch(/undefined|NaN/)
+    expect(t).toMatch(/HAALAND ×2/); expect(t).not.toMatch(/\d+' HAALAND/); expect(t).not.toMatch(/undefined|NaN/)
   })
 
   test('live vs final: status is explicit, a live card is a labelled snapshot', async ({ context, page }) => {

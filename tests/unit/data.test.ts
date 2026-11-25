@@ -120,3 +120,19 @@ describe('fuzzy identity across real provider naming (observed live)', () => {
     expect(merged[0].provenance.map((p) => p.source).sort()).toEqual(['espn', 'openligadb'])
   })
 })
+
+describe('penalty shoot-out (real ESPN payload, 2022 final)', () => {
+  const x = j('espn_shootout.json')
+  it('maps the shoot-out score separately from the match score', () => {
+    const m = toMatch('fifa.world', x.scoreboardEvent)
+    expect([m.homeScore, m.awayScore, m.homePens, m.awayPens]).toEqual([3, 3, 4, 2])
+  })
+  it('leaves the fields absent on a normal match', () => {
+    const m = toMatch('eng.1', j('espn_scoreboard.json').events[0])
+    expect('homePens' in m || 'awayPens' in m).toBe(false)
+  })
+  it('does not count shoot-out kicks as goals', () => {
+    const goals = mapEvents(x.summary).filter((e) => ['goal', 'penalty-goal', 'own-goal'].includes(e.type))
+    expect(goals.length).toBe(6)
+  })
+})
